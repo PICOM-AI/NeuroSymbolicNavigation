@@ -9,8 +9,8 @@
 Clone and launch the simulated TurtleBot environment:
 
 ```bash
-git clone https://github.com/HiveIntel/TurtleBotSim.git
-cd TurtleBotSim
+bash 1build_docker_vnc.sh
+bash 2bringup_docker_vnc.sh
 # Follow the repository instructions to build and start the simulation
 ```
 
@@ -23,17 +23,12 @@ Follow the official setup guide for a real TurtleBot:
 
 ### 1.2. Environment Setup
 
-#### Build the Docker Image
+#### Execute the solver
 
 ```bash
-bash build.sh
+bash 3execute_solver.sh
 ```
 
-#### Launch the Container
-
-```bash
-bash run.sh
-```
 
 ---
 
