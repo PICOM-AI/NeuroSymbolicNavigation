@@ -1,0 +1,69 @@
+FROM ros:humble
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update
+# Gazebo (Ignition) Fortress per TB4 Humble docs
+RUN apt-get update && apt-get install -y wget lsb-release gnupg2 \
+ && sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" > /etc/apt/sources.list.d/gazebo-stable.list' \
+ && wget http://packages.osrfoundation.org/gazebo.key -O - | apt-key add - \
+ && apt-get update && apt-get install -y ignition-fortress \
+ && rm -rf /var/lib/apt/lists/*
+
+# TurtleBot 4 simulator + Create® 3 nodes + dev tools
+RUN apt-get update && apt-get install -y \
+    ros-humble-turtlebot4-simulator \
+    ros-humble-irobot-create-nodes \
+    ros-dev-tools \
+    nano \
+ && rm -rf /var/lib/apt/lists/*
+
+# Lightweight VNC: TigerVNC server + minimal WM (Openbox)
+RUN apt-get update && apt-get install -y \
+      tigervnc-standalone-server \
+      xfce4 \
+  && rm -rf /var/lib/apt/lists/*
+
+# Install dependencies and Clingo
+RUN apt-get update && apt-get install -y \
+    python3-pip \
+    python3-tk \
+    gringo \
+    ros-humble-turtlebot4-msgs \
+    ros-humble-irobot-create-nodes \
+    ros-humble-turtlebot4-viz \
+    ros-humble-turtlebot4-navigation \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies if needed (tkinter is preinstalled in base ROS)
+RUN pip install numpy clingo tqdm matplotlib
+
+# VNC startup (xfce4 session)
+RUN mkdir -p /root/.vnc \
+ && printf '#!/bin/sh\nexec exec /usr/bin/startxfce4 &\n' > /root/.vnc/xstartup \
+ && chmod +x /root/.vnc/xstartup
+
+# Wrapper that starts VNC then your ROS launch
+COPY start_vnc_ros.sh /usr/local/bin/start_vnc_ros.sh
+RUN chmod +x /usr/local/bin/start_vnc_ros.sh
+WORKDIR /workspace
+# Your files
+COPY slam.yaml /opt/ros/humble/share/turtlebot4_navigation/config/slam.yaml
+COPY turtlebot4_spawn.launch.py /opt/ros/humble/share/turtlebot4_ignition_bringup/launch/turtlebot4_spawn.launch.py
+COPY maze maze
+COPY objects .
+COPY robot.rviz /opt/ros/humble/share/turtlebot4_viz/rviz/robot.rviz
+
+# Copy project folder into container
+COPY solver solver
+
+COPY robot.rviz /opt/ros/humble/share/turtlebot4_viz/rviz/robot.rviz
+
+RUN echo "source /opt/ros/humble/setup.bash" >>/root/.bashrc
+
+# Defaults
+ENV DISPLAY=:0
+EXPOSE 5900
+
+SHELL ["/bin/bash", "-lc"]
+ENTRYPOINT ["/ros_entrypoint.sh"]
+CMD ["/usr/local/bin/start_vnc_ros.sh"]

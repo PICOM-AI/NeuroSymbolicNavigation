@@ -1,0 +1,47 @@
+FROM ros:humble
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Gazebo (Ignition) Fortress per TB4 Humble docs
+RUN apt-get update && apt-get install -y wget lsb-release gnupg2 \
+ && sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" > /etc/apt/sources.list.d/gazebo-stable.list' \
+ && wget http://packages.osrfoundation.org/gazebo.key -O - | apt-key add - \
+ && apt-get update && apt-get install -y ignition-fortress \
+ && rm -rf /var/lib/apt/lists/*
+
+# TurtleBot 4 simulator + Create® 3 nodes + dev tools
+RUN apt-get update && apt-get install -y \
+    ros-humble-turtlebot4-simulator \
+    ros-humble-irobot-create-nodes \
+    ros-dev-tools \
+    nano \
+ && rm -rf /var/lib/apt/lists/*
+
+# Install dependencies and Clingo
+RUN apt-get update && apt-get install -y \
+    python3-pip \
+    python3-tk \
+    gringo \
+    ros-humble-turtlebot4-msgs \
+    ros-humble-irobot-create-nodes \
+    ros-humble-turtlebot4-viz \
+    ros-humble-turtlebot4-navigation \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies if needed (tkinter is preinstalled in base ROS)
+RUN pip install numpy clingo tqdm matplotlib
+
+WORKDIR /workspace
+COPY slam.yaml /opt/ros/humble/share/turtlebot4_navigation/config/slam.yaml
+COPY turtlebot4_spawn.launch.py /opt/ros/humble/share/turtlebot4_ignition_bringup/launch/turtlebot4_spawn.launch.py
+COPY maze maze
+COPY objects .
+COPY robot.rviz /opt/ros/humble/share/turtlebot4_viz/rviz/robot.rviz
+
+COPY solver solver
+
+RUN echo "source /opt/ros/humble/setup.bash" >>/root/.bashrc
+
+SHELL ["/bin/bash", "-lc"]
+ENTRYPOINT ["/ros_entrypoint.sh"]
+CMD ["bash"]

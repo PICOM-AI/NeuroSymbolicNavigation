@@ -1,0 +1,27 @@
+FROM ros:humble
+
+# Install dependencies and Clingo
+RUN apt-get update && apt-get install -y \
+    python3-pip \
+    python3-tk \
+    gringo \
+    ros-humble-turtlebot4-msgs \
+    ros-humble-irobot-create-nodes \
+    ros-humble-turtlebot4-viz \
+    ros-humble-turtlebot4-navigation \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /workspace
+
+# Copy project folder into container
+COPY src/ .
+
+# Install Python dependencies if needed (tkinter is preinstalled in base ROS)
+RUN pip install numpy clingo tqdm matplotlib
+
+COPY robot.rviz /opt/ros/humble/share/turtlebot4_viz/rviz/robot.rviz
+COPY turtlebot4_viewer.sh turtlebot4_viewer.sh
+RUN echo "source /opt/ros/humble/setup.bash" >>/root/.bashrc
+# Default command (can be overridden)
+CMD ["bash"]
