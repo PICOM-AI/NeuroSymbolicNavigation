@@ -1,6 +1,6 @@
 image: maze.pgm
 mode: trinary
-resolution: 0.2
+resolution: 0.4
 origin: [-10.1, -10.1, 0]
 negate: 0
 occupied_thresh: 0.65

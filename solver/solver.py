@@ -56,7 +56,7 @@ def evaluateFR(files, show, horizon, radius, cache, activate_robot=False):
     instance = read_from_file(files[0])
     if activate_robot:
         MS_CLOCK = 30000
-        instance.activate_robot()
+        instance.activate_robot("/workspace/maze/maze.yaml")
     learning = pickle.load(
         open(instance.name + '.pkl', 'rb'))
     game = Game(instance, learning, show, True, horizon=horizon + 1, radius=radius, cache=cache)

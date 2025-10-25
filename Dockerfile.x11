@@ -33,11 +33,10 @@ RUN pip install numpy clingo tqdm matplotlib
 
 WORKDIR /workspace
 COPY slam.yaml /opt/ros/humble/share/turtlebot4_navigation/config/slam.yaml
-COPY turtlebot4_spawn.launch.py /opt/ros/humble/share/turtlebot4_ignition_bringup/launch/turtlebot4_spawn.launch.py
 COPY maze maze
 COPY objects .
 COPY robot.rviz /opt/ros/humble/share/turtlebot4_viz/rviz/robot.rviz
-
+COPY slam.launch.py /opt/ros/humble/share/turtlebot4_navigation/launch/slam.launch.py
 COPY solver solver
 
 RUN echo "source /opt/ros/humble/setup.bash" >>/root/.bashrc

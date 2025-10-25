@@ -4,6 +4,9 @@ import time
 import math
 from typing import Optional
 import time
+
+from pathlib import Path
+import yaml
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
@@ -84,6 +87,25 @@ def read_from_file(filename):
 
     return instance
 
+def read_map_metadata(yaml_path):
+    """
+    Read resolution and origin from a ROS map YAML file.
+
+    Args:
+        yaml_path (str): Path to the maze/map YAML file.
+
+    Returns:
+        tuple: (resolution: float, origin: list[float])
+    """
+    with open(yaml_path, 'r') as f:
+        data = yaml.safe_load(f)
+
+    resolution = float(data.get('resolution', 0.0))
+    origin = list(data.get('origin', [0.0, 0.0, 0.0]))
+    image = data.get('image', 'maze.pgm')
+    map_name = image.split('.')[0]
+
+    return resolution, origin, map_name
 
 class Instance:
 
@@ -103,14 +125,96 @@ class Instance:
         self.safety_distance = safety_distance
         self.use_robot = False
 
-    def activate_robot(self):
+
+    def activate_robot(self, map_yaml_path="maze/maze.yaml"):
+        """
+        Initialize motion, load map metadata, set map params,
+        place the dock at target cell, and orient the robot.
+        """
+        # Init ROS if needed
+        try:
+            ok = rclpy.ok()
+        except Exception:
+            ok = False
+        if not ok:
+            rclpy.init()
+
+        # Create controller if missing
+        if getattr(self, "robot_controller", None) is None:
+            self.robot_controller = TB4Motion()
+
         self.use_robot = True
-        rclpy.init()
-        self.robot_controller = TB4Motion()
-        self.robot_controller.set_map_params(-10.1,-10.1,0.4,50,50)#self.size,self.size)
+
+        # Load map metadata
+        resolution = 0.4  # default
+        origin = [-10.1, -10.1, 0.0]
+        map_name = "maze"
+        path = Path(map_yaml_path)
+        if path.exists():
+            try:
+                resolution, origin, map_name = read_map_metadata(str(path))
+                print(f"Map metadata: resolution={resolution}, origin={origin}, map_name={map_name}")
+            except Exception as e:
+                print(f"Failed to read '{path}': {e}. Using defaults.")
+        else:
+            print(f"Map YAML '{path}' not found. Using defaults.")
+
+        # Configure map params: origin_x, origin_y, resolution, width, height
+        self.robot_controller.set_map_params(
+            origin[0], origin[1], float(resolution), int(self.size), int(self.size)
+        )
+
+        # Set initial robot pose
+        rx, ry = self.robot_controller.cell2pose(self.robot[0], self.robot[1])
+        try:
+            self.robot_controller.teleport_object(
+                "turtlebot4", rx, ry, 0.0, 0.0, map_name
+            )
+        except Exception as e:
+            print(f"Robot teleport failed: {e}")
+
+        # Compute dock pose from target cell
+        tx, ty = int(self.target[0]), int(self.target[1])
+        dock_x, dock_y = self.robot_controller.cell2pose(tx, ty)
+
+        # Face toward +Y if target on upper half, else toward -Y
+        dock_yaw = math.pi / 2 if ty >= (self.size / 2) else -math.pi / 2
+
+        # Teleport dock into the maze world
+        try:
+            self.robot_controller.teleport_object(
+                "standard_dock", dock_x, dock_y, 0.0, dock_yaw, map_name
+            )
+        except Exception as e:
+            print(f"Dock teleport failed: {e}")
+            
+        if (len(self.restricted_areas) > 0):
+            for i in range(len(self.restricted_areas)):
+                rx, ry = self.robot_controller.cell2pose(self.restricted_areas[i][0], self.restricted_areas[i][1])
+                self.robot_controller.spawn_new_object(
+                    sdf_path="/workspace/construction_cone/model.sdf",
+                    name=f"restricted_area_{i}",
+                    world=map_name,
+                    x=rx,
+                    y=ry,
+                    z=0.1,
+                )
+        if (len(self.obstacles) > 0):
+            for i in range(len(self.obstacles)):
+                ox, oy = self.robot_controller.cell2pose(self.obstacles[i][0], self.obstacles[i][1])
+                self.robot_controller.spawn_new_object(
+                    sdf_path="/workspace/person_walking/model.sdf",
+                    name=f"obstacle_{i}",
+                    world=map_name,
+                    x=ox,
+                    y=oy,
+                    z=0.1,
+                )
         
-        p=self.robot_controller.rotate_left_90()  # initial orientation towards positive Y
-        print(self.robot_controller.pose2cell(p))
+        # Orient robot and report its cell
+        pose_after_turn = self.robot_controller.rotate_left_90()
+        print(self.robot_controller.pose2cell(pose_after_turn))
+        return pose_after_turn
 
     def add_obstacle(self, position):
         self.obstacles.append(position)
@@ -177,7 +281,17 @@ class Instance:
                 result = (self.obstacles[obstacle][0] - 1, self.obstacles[obstacle][1])
             case 3:
                 result = (self.obstacles[obstacle][0] + 1, self.obstacles[obstacle][1])
+                   
         self.obstacles[obstacle] = result
+        if self.use_robot:
+            obj_name = f"obstacle_{obstacle}"
+            ox, oy = self.robot_controller.cell2pose(result[0], result[1])
+            try:
+                self.robot_controller.teleport_object(
+                    obj_name, ox, oy, 0.0, 0.0, "maze"
+                )
+            except Exception as e:
+                print(f"Obstacle teleport failed: {e}")
 
     def check_obstacle_feasible(self, obstacle, action):
         result = None

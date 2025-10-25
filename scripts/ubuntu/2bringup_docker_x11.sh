@@ -16,5 +16,6 @@ docker run --rm -it \
 -e __GLX_VENDOR_LIBRARY_NAME=nvidia \
 -e NVIDIA_DRIVER_CAPABILITIES=graphics,utility,compute \
 --device /dev/dri \
+-v "$(pwd)/solver:/workspace/solver" \
 "$IMAGE" \
 bash -lc 'exec ros2 launch turtlebot4_ignition_bringup turtlebot4_ignition.launch.py localization:=true world:=maze map:=maze/maze.yaml slam:=true'

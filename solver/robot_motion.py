@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 import math
+import os
+import subprocess
 from typing import Optional
 import time
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
 from rclpy.task import Future
+
+from pathlib import Path
+
 
 from irobot_create_msgs.action import RotateAngle, DriveDistance
 
@@ -123,3 +128,73 @@ class TB4Motion(Node):
         cell_x = int((x - self.origin_x) / self.cell_size)
         cell_y = self.map_height - int((y - self.origin_y) / self.cell_size) # flip y-axis
         return (cell_x, cell_y)
+
+    def cell2pose(self, cell_x, cell_y):
+        """Convert grid cell coordinates (top-left) back to pose coordinates (bottom-left)."""
+        x = self.origin_x + (cell_x) * self.cell_size -0.5
+        y = self.origin_y + (self.map_height - cell_y) * self.cell_size + 0.1  # unflip y-axis
+        return (x, y)
+
+    def teleport_object(self, model_name, x, y, z=0.0, yaw=0.0, world="default"):
+        """
+        Teleport a Gazebo (Fortress) model to a specified pose using ign service.
+
+        Args:
+            model_name (str): Model name in Gazebo.
+            x, y, z (float): Target position.
+            yaw (float): Rotation about Z (radians).
+            world (str): World name (default: "default").
+        """
+        import math
+
+        # Convert yaw to quaternion (assuming flat rotation)
+        qx, qy, qz, qw = 0.0, 0.0, math.sin(yaw / 2.0), math.cos(yaw / 2.0)
+
+        cmd = [
+            "ign", "service",
+            "-s", f"/world/{world}/set_pose",
+            "--reqtype", "ignition.msgs.Pose",
+            "--reptype", "ignition.msgs.Boolean",
+            "--timeout", "3000",
+            "--req",
+            (
+                f'name: "{model_name}", '
+                f'position: {{x: {x}, y: {y}, z: {z}}}, '
+                f'orientation: {{x: {qx}, y: {qy}, z: {qz}, w: {qw}}}'
+            )
+        ]
+
+        subprocess.run(cmd, check=True)
+
+    def spawn_new_object(self, sdf_path="box.sdf", name="obj", world="maze", x=0.0, y=0.0, z=0.1):
+        """
+        Spawn an SDF object into a Gazebo world using ros_gz_sim CLI.
+
+        Args:
+            sdf_path (str): Path to the SDF file.
+            name (str): Model name.
+            world (str): Target Gazebo world.
+            x, y, z (float): Spawn coordinates.
+        """
+        sdf_file = Path(sdf_path)
+        if not sdf_file.exists():
+            print(f"SDF file '{sdf_file}' not found.")
+            return False
+
+        cmd = [
+            "ros2", "run", "ros_gz_sim", "create",
+            "-world", world,
+            "-file", str(sdf_file),
+            "-name", name,
+            "-x", str(x),
+            "-y", str(y),
+            "-z", str(z)
+        ]
+
+        try:
+            subprocess.run(cmd, check=True)
+            print(f"Spawned '{name}' at ({x}, {y}, {z}) in world '{world}'.")
+            return True
+        except subprocess.CalledProcessError as e:
+            print(f"Failed to spawn '{name}': {e}")
+            return False

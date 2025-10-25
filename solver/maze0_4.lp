@@ -2,6 +2,9 @@
 robot(25, 25).
 target(2, 1).
 
+obstacle(23,23).
+restricted_area(22,22).
+
 wall(1, 1).
 wall(1, 2).
 wall(1, 3).

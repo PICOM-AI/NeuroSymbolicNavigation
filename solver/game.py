@@ -33,6 +33,7 @@ class Game:
         CLOCK_MS = ms
 
     def next_step(self):
+        global CLOCK_MS
         # call this function again in 1 second
         time_pre_compute = get_current_time_ms()
 
@@ -63,7 +64,16 @@ class Game:
         print("send command to move..")
         t0=time.time()
         self.instance.execute(action)
-        print("done moving.",time.time()-t0)
+        control_time = time.time()-t0
+        print(f"control time: {control_time:.2f} sec")
+        print("done moving.")
+        if (control_time*1000) > CLOCK_MS:
+            CLOCK_MS = int(control_time*1000*1.2)+1000
+            #print(f"Adjusted CLOCK_MS to {CLOCK_MS} ms")
+        elif (control_time*1000)/CLOCK_MS<0.7:
+            CLOCK_MS = int(control_time*1000*1.2)+1000
+            #print(f"Adjusted CLOCK_MS to {CLOCK_MS} ms")
+        
         self.instance.emulate_obstacles()
         self.instance.check_violations()
         if self.show:
