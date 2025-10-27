@@ -45,10 +45,10 @@ git clone https://github.com/PICOM-AI/NeuroSymbolicNavigation.git
 cd scripts/ubuntu
 
 # Build the Docker image
-bash 1build_docker_vnc.sh
+bash 1build_docker_x11.sh
 
 # Launch the simulator in a Docker container
-bash 2bringup_docker_vnc.sh
+bash 2bringup_docker_x11.sh
 ```
 
 A simulation window will appear. You can interact with it using your mouse:
@@ -82,6 +82,10 @@ Interaction is the same as on Linux:
 * **Zoom:** Mouse Scroll
 
 > **Note:** We recommend using a third-party VNC client such as [RealVNC Viewer](https://www.realvnc.com/en/connect/download/viewer/?lai_vid=b5ROml3nAIvny&lai_sr=10-14&lai_sl=l) instead of the default macOS viewer.
+
+
+### For Windows (WSL2)
+For windows, please setup Windows Subsystem for Linux here [How to install WSL](https://learn.microsoft.com/en-us/windows/wsl/setup/environment), then follow the instruction with VNC for **MacOs** above.
 
 ---
 
