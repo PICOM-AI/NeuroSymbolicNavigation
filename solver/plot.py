@@ -42,7 +42,7 @@ def draw_bitmap(size, facts):
     ax.tick_params(left=False, bottom=False, labelleft=False, labelbottom=False)
 
     for (x, y) in facts.get("robot", []):
-        ax.text(x-1, y-1, "P", ha="center", va="center", color="white", weight="bold", fontsize=14)
+        ax.text(x-1, y-1, "R", ha="center", va="center", color="white", weight="bold", fontsize=14)
     for (x, y) in facts.get("target", []):
         ax.text(x-1, y-1, "T", ha="center", va="center", color="white", weight="bold", fontsize=14)
 

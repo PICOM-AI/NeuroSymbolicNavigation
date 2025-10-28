@@ -14,13 +14,11 @@ class Game:
                  asp,
                  horizon=1,
                  radius=1,
-                 cache=1,
-                 telingo=False):
+                 cache=1):
         self.instance = instance
         self.learning = learning
         self.asp = asp
         self.show = show
-        self.telingo = telingo
         self.cache = cache
         if show:
             from interface import Interface
@@ -48,10 +46,7 @@ class Game:
             if self.logic.ctl is None:
                 self.logic.setup()
             ref_action = self.learning.get_action(self.instance)
-            if self.telingo:
-                action = telingohelper.get_action(self.instance, self.logic.horizon, self.logic.radius, self.learning)
-            else:
-                action = self.logic.get_action(self.cache)
+            action = self.logic.get_action(self.cache)
 
             if action != ref_action:
                 self.instance.interceptions += 1

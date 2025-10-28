@@ -176,5 +176,4 @@ class Learning:
                 if dn or steps >= max_steps_per_ep:
                     break
 
-        os.makedirs(os.path.dirname(f'instances/learning/{instance.name}.pkl'), exist_ok=True)
-        pickle.dump(self, open(f"instances/learning/{instance.name}.pkl", 'wb'))
+        pickle.dump(self, open(f"{instance.name}.pkl", 'wb'))
