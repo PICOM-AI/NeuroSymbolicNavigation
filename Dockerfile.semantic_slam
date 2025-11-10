@@ -1,0 +1,68 @@
+FROM eusmartedge/primitive-perception:ros-humble-amd64
+
+# Noninteractive apt
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Locale (recommended by ROS images)
+RUN apt-get update && apt-get install -y locales \
+ && locale-gen en_US en_US.UTF-8 \
+ && update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 \
+ && rm -rf /var/lib/apt/lists/*
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
+
+# --- System deps for your nodes and building ---
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git curl wget nano \
+    python3-pip python3-colcon-common-extensions python3-rosdep \
+    # ROS message and TF deps
+    ros-humble-vision-msgs \
+    ros-humble-geometry-msgs \
+    ros-humble-visualization-msgs \
+    ros-humble-tf2-ros \
+    ros-humble-tf2-geometry-msgs \
+    # Image transport + cv_bridge
+    ros-humble-image-transport \
+    ros-humble-cv-bridge \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN pip install numpy==1.26.4
+
+
+# --- Workspace layout ---
+# Expect to COPY your local ros2_ws/src into /ws/src at build time
+WORKDIR /ws
+COPY ./semantic_slam/src ./src
+COPY ./semantic_slam/yolo11n.pt /ws/yolo11n.pt
+
+# Initialize rosdep and install any missing ROS deps declared in package.xml
+RUN rosdep init 2>/dev/null || true \
+ && rosdep update \
+ && rosdep install --from-paths src --ignore-src -r -y
+
+# Build
+RUN /bin/bash -lc "source /opt/ros/humble/setup.bash && colcon build --symlink-install"
+
+
+# --- Runtime environment ---
+# Default ROS env; override at `docker run` if needed
+ENV ROS_DISTRO=humble
+ENV ROS_DOMAIN_ID=0
+#ENV RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+
+# Source overlays in every shell and provide a launch-friendly entrypoint
+RUN bash -lc 'printf "%s\n" \
+  "source /opt/ros/humble/setup.bash" \
+  "source /ws/install/setup.bash" \
+  > /etc/ros_entrypoint_overlay.sh'
+
+# Simple entrypoint that sources ROS + workspace then execs CMD
+RUN printf "%s\n" '#!/usr/bin/env bash' \
+  'set -e' \
+  'source /etc/ros_entrypoint_overlay.sh' \
+  'exec "$@"' > /ros_entrypoint.sh \
+ && chmod +x /ros_entrypoint.sh
+
+ENTRYPOINT ["/ros_entrypoint.sh"]
+# Default command: do nothing; you pass a launch at runtime
+CMD ["bash"]

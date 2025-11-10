@@ -218,7 +218,6 @@ class Instance:
 
     def add_obstacle(self, position):
         self.obstacles.append(position)
-        
 
     def execute(self, action,is_evaluation=False):
         lastest_position = (self.robot[0], self.robot[1])
@@ -242,6 +241,8 @@ class Instance:
             self.visited[self.robot] = self.visited[self.robot] + 1
         else:
             self.visited[self.robot] = 1
+            
+        #self.update_obstacle()
         if DEBUG:
             print("robot moved from:", lastest_position, "to:", self.robot)
         # if random.choice([True, False, False, False, False]):
@@ -370,3 +371,10 @@ class Instance:
         file = open('instances/%s.lp' % self.name, 'w')
         file.write(text)
         file.close()
+
+    def update_obstacle(self):
+        list_of_obstacles = self.robot_controller.get_objects()
+        print(list_of_obstacles)
+        '''for i in range(len(list_of_obstacles)):
+            pos = list_of_obstacles[i]['cell']
+            self.add_obstacle(pos)'''

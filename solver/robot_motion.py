@@ -8,11 +8,20 @@ import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
 from rclpy.task import Future
-
 from pathlib import Path
-
-
 from irobot_create_msgs.action import RotateAngle, DriveDistance
+
+
+import math
+from typing import Dict, List, Tuple, Optional
+
+import rclpy
+from rclpy.node import Node
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
+from rclpy.task import Future
+
+from geometry_msgs.msg import PoseStamped, Pose
+from visualization_msgs.msg import MarkerArray, Marker
 
 
 class TB4Motion(Node):
@@ -198,3 +207,120 @@ class TB4Motion(Node):
         except subprocess.CalledProcessError as e:
             print(f"Failed to spawn '{name}': {e}")
             return False
+        
+    def _yaw_from_quat(self,x: float, y: float, z: float, w: float) -> float:
+        siny_cosp = 2.0 * (w * z + x * y)
+        cosy_cosp = 1.0 - 2.0 * (y * y + z * z)
+        return math.atan2(siny_cosp, cosy_cosp)
+
+
+    def _fetch_markers_once(self, markers_topic: str, timeout_sec: float) -> Optional[MarkerArray]:
+        qos_sensor = QoSProfile(depth=10,
+                                reliability=ReliabilityPolicy.BEST_EFFORT,
+                                history=HistoryPolicy.KEEP_LAST)
+        node = rclpy.create_node('get_objects_fetch_markers_once')
+        fut: Future = Future()
+
+        def _cb(msg: MarkerArray):
+            if not fut.done():
+                fut.set_result(msg)
+
+        sub = node.create_subscription(MarkerArray, markers_topic, _cb, qos_sensor)
+
+        try:
+            rclpy.spin_until_future_complete(node, fut, timeout_sec=timeout_sec)
+            return fut.result() if fut.done() else None
+        finally:
+            node.destroy_subscription(sub)
+            node.destroy_node()
+
+
+    def get_objects(self,                    
+                    markers_topic: str = '/semantic_markers',
+                    timeout_sec: float = 5.0) -> List[dict]:
+        """
+        Fetch one MarkerArray from `markers_topic`, then compute filled map cells per CUBE object.
+
+        Returns: list of dicts:
+        {
+            'id': int,
+            'label': str,
+            'cells': List[(cell_x, cell_y)],
+            'bbox_cells': ((min_x, min_y), (max_x, max_y)),
+            'center_xy_m': (x, y),
+            'size_xy_m': (w, h),
+        }
+        """
+        markers = self._fetch_markers_once(markers_topic, timeout_sec)
+        if markers is None:
+            return []
+
+        # Partition markers
+        cubes: List[Marker] = [m for m in markers.markers if m.type == Marker.CUBE]
+        texts: List[Marker] = [m for m in markers.markers if m.type == Marker.TEXT_VIEW_FACING]
+
+        # Label by nearest text to cube center
+        label_by_id: Dict[int, str] = {}
+        for cb in cubes:
+            cx, cy = cb.pose.position.x, cb.pose.position.y
+            best = None
+            best_d2 = 0.25  # <= ~0.5 m radius
+            for tm in texts:
+                dx = tm.pose.position.x - cx
+                dy = tm.pose.position.y - cy
+                d2 = dx * dx + dy * dy
+                if d2 < best_d2:
+                    best_d2 = d2
+                    best = tm.text or ''
+            label_by_id[cb.id] = best if best else 'object'
+
+        out: List[dict] = []
+
+        for cb in cubes:
+            cx = cb.pose.position.x
+            cy = cb.pose.position.y
+            w = max(1e-6, cb.scale.x)
+            h = max(1e-6, cb.scale.y)
+
+            q = cb.pose.orientation
+            yaw = self._yaw_from_quat(q.x, q.y, q.z, q.w)
+
+            # World corners of the footprint rectangle on the map plane
+            dx = w * 0.5
+            dy = h * 0.5
+            corners = []
+            for sx, sy in [(-dx, -dy), (dx, -dy), (dx, dy), (-dx, dy)]:
+                xw = cx + math.cos(yaw) * sx - math.sin(yaw) * sy
+                yw = cy + math.sin(yaw) * sx + math.cos(yaw) * sy
+                corners.append((xw, yw))
+
+            # Convert corners to grid cells using your pose2cell()
+            xs, ys = [], []
+            for xw, yw in corners:
+                ps = PoseStamped()
+                ps.pose = Pose()
+                ps.pose.position.x = xw
+                ps.pose.position.y = yw
+                cell_x, cell_y = self.pose2cell(ps)
+                xs.append(cell_x)
+                ys.append(cell_y)
+
+            min_x = min(xs)
+            max_x = max(xs)
+            min_y = min(ys)
+            max_y = max(ys)
+
+            # Fill the rectangle in cell coordinates
+            cells = [(ix, iy) for ix in range(min_x, max_x + 1)
+                            for iy in range(min_y, max_y + 1)]
+
+            out.append({
+                'id': cb.id,
+                'label': label_by_id.get(cb.id, 'object'),
+                'cells': cells,
+                'bbox_cells': ((min_x, min_y), (max_x, max_y)),
+                'center_xy_m': (round(cx, 3), round(cy, 3)),
+                'size_xy_m': (round(w, 3), round(h, 3)),
+            })
+
+        return out

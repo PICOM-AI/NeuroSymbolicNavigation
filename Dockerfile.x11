@@ -37,6 +37,11 @@ COPY maze maze
 COPY objects .
 COPY robot.rviz /opt/ros/humble/share/turtlebot4_viz/rviz/robot.rviz
 COPY slam.launch.py /opt/ros/humble/share/turtlebot4_navigation/launch/slam.launch.py
+
+COPY urdf_models/maze.sdf /opt/ros/humble/share/turtlebot4_ignition_bringup/worlds/maze.sdf
+COPY urdf_models/oakd.urdf.xacro /opt/ros/humble/share/turtlebot4_description/urdf/sensors/oakd.urdf.xacro
+COPY urdf_models/rplidar.urdf.xacro /opt/ros/humble/share/turtlebot4_description/urdf/sensors/rplidar.urdf.xacro
+
 COPY solver solver
 
 RUN echo "source /opt/ros/humble/setup.bash" >>/root/.bashrc

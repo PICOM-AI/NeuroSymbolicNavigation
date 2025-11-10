@@ -64,10 +64,10 @@ class Game:
         print("done moving.")
         if (control_time*1000) > CLOCK_MS:
             CLOCK_MS = int(control_time*1000*1.2)+1000
-            #print(f"Adjusted CLOCK_MS to {CLOCK_MS} ms")
+            print(f"Adjusted CLOCK_MS to {CLOCK_MS} ms")
         elif (control_time*1000)/CLOCK_MS<0.7:
             CLOCK_MS = int(control_time*1000*1.2)+1000
-            #print(f"Adjusted CLOCK_MS to {CLOCK_MS} ms")
+            print(f"Adjusted CLOCK_MS to {CLOCK_MS} ms")
         
         self.instance.emulate_obstacles()
         self.instance.check_violations()
