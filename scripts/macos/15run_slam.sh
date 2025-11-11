@@ -1,0 +1,1 @@
+docker exec -it turtlebot4_slam bash -c "source /opt/ros/humble/setup.bash && cd /ws && bash run_slam.sh"

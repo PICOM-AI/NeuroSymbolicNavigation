@@ -1,0 +1,75 @@
+FROM  ros:humble
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y wget lsb-release gnupg2 nano
+# Lightweight VNC: TigerVNC server + minimal WM (Openbox)
+RUN apt-get update && apt-get install -y \
+      tigervnc-standalone-server \
+      xfce4
+# Install dependencies and Clingo
+RUN apt-get update && apt-get install -y \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+
+# VNC startup (xfce4 session)
+RUN mkdir -p /root/.vnc \
+ && printf '#!/bin/sh\nexec exec /usr/bin/startxfce4 &\n' > /root/.vnc/xstartup \
+ && chmod +x /root/.vnc/xstartup
+
+
+WORKDIR /ws
+
+
+# Locale (recommended by ROS images)
+RUN apt-get update && apt-get install -y locales \
+ && locale-gen en_US en_US.UTF-8 \
+ && update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 \
+ && rm -rf /var/lib/apt/lists/*
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
+
+# Tools for building and dependency resolution
+RUN apt-get update && apt-get install -y \
+    ros-humble-rviz2 \
+    ros-humble-rosbag2-storage-mcap \
+    ros-humble-sensor-msgs \
+    ros-humble-rtabmap-ros \
+    ros-humble-nav-msgs \
+    ros-humble-nav2-map-server \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN pip install numpy==1.26.4
+
+# --- Workspace layout ---
+WORKDIR /ws
+
+RUN echo "source /opt/ros/humble/setup.bash" >>/root/.bashrc
+
+# Defaults
+ENV DISPLAY=:0
+EXPOSE 5900
+ENV ROS_DISTRO=humble
+ENV ROS_DOMAIN_ID=0
+
+SHELL ["/bin/bash", "-lc"]
+
+# Source overlays in every shell and provide a launch-friendly entrypoint
+RUN bash -lc 'printf "%s\n" \
+  "source /opt/ros/humble/setup.bash" \
+  > /etc/ros_entrypoint_overlay.sh'
+
+# Simple entrypoint that sources ROS + workspace then execs CMD
+RUN printf "%s\n" '#!/usr/bin/env bash' \
+  'set -e' \
+  'source /etc/ros_entrypoint_overlay.sh' \
+  'exec "$@"' > /ros_entrypoint.sh \
+ && chmod +x /ros_entrypoint.sh
+
+COPY start_vnc_object_detection.sh /usr/local/bin/start_vnc_object_detection.sh
+RUN chmod +x /usr/local/bin/start_vnc_object_detection.sh
+
+ENTRYPOINT ["/ros_entrypoint.sh"]
+
+CMD ["/usr/local/bin/start_vnc_object_detection.sh"]

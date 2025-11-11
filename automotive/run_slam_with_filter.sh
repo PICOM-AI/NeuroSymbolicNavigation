@@ -1,0 +1,1 @@
+ros2 launch rtabmap_examples lidar3d.launch.py lidar_topic:=/lidar_points_filtered frame_id:=hesai_lidar voxel_size:=0.5

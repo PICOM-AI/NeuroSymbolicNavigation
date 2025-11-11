@@ -1,0 +1,5 @@
+ros2 bag play /ws/20250904_111219/20250904_111219_0.mcap &
+
+python3 /ws/ground_filter.py 
+
+wait
