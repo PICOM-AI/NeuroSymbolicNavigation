@@ -9,7 +9,7 @@ class ZCrop(Node):
         super().__init__('z_cropper')
         self.declare_parameter('input', '/lidar_points')
         self.declare_parameter('output', '/lidar_points_filtered')
-        self.declare_parameter('min_z', -2.5)
+        self.declare_parameter('min_z', -2.0)
         self.declare_parameter('max_z', 3.0)
         self.pub = self.create_publisher(PointCloud2, self.get_parameter('output').value, 10)
         self.sub = self.create_subscription(PointCloud2, self.get_parameter('input').value, self.cb, 10)
