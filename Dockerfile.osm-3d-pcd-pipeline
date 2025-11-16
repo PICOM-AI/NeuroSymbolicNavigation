@@ -15,10 +15,6 @@ RUN apt-get update && apt-get install -y \
     qtbase5-dev \
     qttools5-dev \
     qttools5-dev-tools \
-    qt6-base-dev \
-    qt6-base-dev-tools \
-    libqt6svg6 \ 
-    libqt6svg6-dev \
     qtscript5-dev \
     libqt5svg5-dev \
     libboost-system-dev \
@@ -37,22 +33,18 @@ RUN apt-get update && apt-get install -y \
     software-properties-common \
     && rm -rf /var/lib/apt/lists/*
 
-# Add Kitware APT repo (example; exact lines may differ per distro)
-RUN wget -O - https://apt.kitware.com/kitware-archive.sh | sudo bash
-RUN apt update && apt install -y cmake
+
 # Set working directory
 WORKDIR /app
 
 # Download and install osm2world
-RUN wget https://osm2world.org/download/files/0.3.1/OSM2World-0.3.1-bin.zip && \
-    unzip OSM2World-0.3.1-bin.zip && \
-    mv OSM2World.jar osm2world.jar && \
-    rm OSM2World-0.3.1-bin.zip
-
+COPY hdmap/resources/osm2world.jar /app/osm2world.jar
+RUN chmod +x /app/osm2world.jar
 # Clone and build CloudCompare
 WORKDIR /app
-RUN git clone --recursive https://github.com/CloudCompare/CloudCompare.git && \
-    cd CloudCompare && \
+
+COPY hdmap/resources/CloudCompare /app/CloudCompare
+RUN cd CloudCompare && \
     mkdir build && \
     cd build && \
     cmake .. -DPLUGIN_STANDARD_QPCL=ON && \

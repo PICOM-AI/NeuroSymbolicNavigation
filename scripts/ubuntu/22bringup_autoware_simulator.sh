@@ -1,4 +1,5 @@
  cd ../..
+ xhost +
  docker run -it -v $PWD/hdmap/map_files:/data/hdmap \
  --gpus=all \
     -e DISPLAY \
@@ -7,4 +8,5 @@
     -v "$XAUTH:$XAUTH" \
     -v "/tmp/.X11-unix:/tmp/.X11-unix" \
     -v "/dev:/dev" \
+    --name autoware_sim \
  --rm ghcr.io/autowarefoundation/autoware:universe-cuda

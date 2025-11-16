@@ -1,0 +1,88 @@
+FROM  ghcr.io/autowarefoundation/autoware:universe-arm64
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN locale  # check for UTF-8
+
+RUN rm /etc/apt/sources.list.d/ros2-latest.list
+RUN apt update && apt install -y locales
+RUN locale-gen en_US en_US.UTF-8
+RUN update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+ENV LANG=en_US.UTF-8
+
+RUN locale  # verify settings
+
+RUN apt install -y software-properties-common
+RUN add-apt-repository universe
+RUN apt update && apt install -y curl && \
+  export ROS_APT_SOURCE_VERSION=$(curl -s https://api.github.com/repos/ros-infrastructure/ros-apt-source/releases/latest | grep -F "tag_name" | awk -F\" '{print $4}') && \
+  curl -L -o /tmp/ros2-apt-source.deb "https://github.com/ros-infrastructure/ros-apt-source/releases/download/${ROS_APT_SOURCE_VERSION}/ros2-apt-source_${ROS_APT_SOURCE_VERSION}.$(. /etc/os-release && echo ${UBUNTU_CODENAME:-${VERSION_CODENAME}})_all.deb" && \
+  dpkg -i /tmp/ros2-apt-source.deb
+
+RUN apt-get update && apt-get install -y wget lsb-release gnupg2 nano
+# Lightweight VNC: TigerVNC server + minimal WM (Openbox)
+RUN apt-get update && apt-get install -y \
+      tigervnc-standalone-server \
+      xfce4
+# Install dependencies and Clingo
+RUN apt-get update && apt-get install -y \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+
+# VNC startup (xfce4 session)
+RUN mkdir -p /root/.vnc \
+ && printf '#!/bin/sh\nexec exec /usr/bin/startxfce4 &\n' > /root/.vnc/xstartup \
+ && chmod +x /root/.vnc/xstartup
+
+
+WORKDIR /ws
+
+
+# Locale (recommended by ROS images)
+RUN apt-get update && apt-get install -y locales \
+ && locale-gen en_US en_US.UTF-8 \
+ && update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 \
+ && rm -rf /var/lib/apt/lists/*
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
+
+# --- System deps for your nodes and building ---
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git curl wget nano \
+ && rm -rf /var/lib/apt/lists/*
+
+
+# --- Workspace layout ---
+# Expect to COPY your local ros2_ws/src into /ws/src at build time
+WORKDIR /ws
+
+RUN echo "source /opt/ros/humble/setup.bash" >>/root/.bashrc
+
+# Defaults
+ENV DISPLAY=:0
+EXPOSE 5900
+ENV ROS_DISTRO=humble
+ENV ROS_DOMAIN_ID=0
+
+SHELL ["/bin/bash", "-lc"]
+
+# Source overlays in every shell and provide a launch-friendly entrypoint
+RUN bash -lc 'printf "%s\n" \
+  "source /opt/ros/humble/setup.bash" \
+  "source /opt/autoware/setup.bash" \
+  > /etc/ros_entrypoint_overlay.sh'
+
+# Simple entrypoint that sources ROS + workspace then execs CMD
+RUN printf "%s\n" '#!/usr/bin/env bash' \
+  'set -e' \
+  'source /etc/ros_entrypoint_overlay.sh' \
+  'exec "$@"' > /ros_entrypoint.sh \
+ && chmod +x /ros_entrypoint.sh
+
+COPY start_vnc_autoware.sh /usr/local/bin/start_vnc_autoware.sh
+RUN chmod +x /usr/local/bin/start_vnc_autoware.sh
+
+ENTRYPOINT ["/ros_entrypoint.sh"]
+
+CMD ["/usr/local/bin/start_vnc_autoware.sh"]
