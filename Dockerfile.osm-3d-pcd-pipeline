@@ -6,7 +6,6 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Install dependencies
 RUN apt-get update && apt-get install -y \
     tzdata \
-    cmake \
     openjdk-17-jre \
     pcl-tools \
     wget \
@@ -34,18 +33,24 @@ RUN apt-get update && apt-get install -y \
     software-properties-common \
     && rm -rf /var/lib/apt/lists/*
 
-
+# Add Kitware APT repo (example; exact lines may differ per distro)
+RUN wget -O - https://apt.kitware.com/kitware-archive.sh | bash
+RUN apt update && apt install -y cmake
 # Set working directory
 WORKDIR /app
 
 # Download and install osm2world
-COPY hdmap/resources/osm2world.jar /app/osm2world.jar
-RUN chmod +x /app/osm2world.jar
+RUN wget https://osm2world.org/download/files/0.3.1/OSM2World-0.3.1-bin.zip && \
+    unzip OSM2World-0.3.1-bin.zip && \
+    mv OSM2World.jar osm2world.jar && \
+    rm OSM2World-0.3.1-bin.zip
+
 # Clone and build CloudCompare
 WORKDIR /app
-
-COPY hdmap/resources/CloudCompare /app/CloudCompare
-RUN cd CloudCompare && \
+RUN git clone https://github.com/CloudCompare/CloudCompare.git && \
+    cd CloudCompare && \
+    git checkout f630bfbf5a650cb3122e978c8874e83ca871af1a && \
+    git submodule update --init --recursive && \
     mkdir build && \
     cd build && \
     cmake .. -DPLUGIN_STANDARD_QPCL=ON && \
