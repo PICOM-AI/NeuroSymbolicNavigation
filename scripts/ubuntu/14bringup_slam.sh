@@ -17,6 +17,7 @@ docker run --rm -it \
 -e NVIDIA_DRIVER_CAPABILITIES=graphics,utility,compute \
 --device /dev/dri \
 -v "$(pwd)/automotive:/ws" \
+-v "/media/legion/WData/esteri4/20250904_111219/20250904_111219:/ws/20250904_111219" \
 -w /ws \
 "$IMAGE"
 

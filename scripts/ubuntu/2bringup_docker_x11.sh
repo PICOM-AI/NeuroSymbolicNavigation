@@ -18,7 +18,9 @@ docker run --rm -it \
 --device /dev/dri \
 -v "$(pwd)/solver:/workspace/solver" \
 "$IMAGE" \
-bash -lc 'exec ros2 launch turtlebot4_ignition_bringup turtlebot4_ignition.launch.py localization:=true world:=maze map:=maze/maze.yaml slam:=true rviz:=true'
+bash -lc 'exec ros2 launch turtlebot4_ignition_bringup turtlebot4_ignition.launch.py world:=maze nav:=true rviz:=true'
+
+#bash -lc 'exec ros2 launch turtlebot4_ignition_bringup turtlebot4_ignition.launch.py localization:=true world:=maze map:=maze/maze.yaml slam:=true rviz:=true'
 
 
 #bash -lc 'exec ros2 launch turtlebot4_ignition_bringup turtlebot4_ignition.launch.py world:=maze slam:=true nav:=true'
