@@ -207,3 +207,7 @@ marimo/_lsp/
 __marimo__/
 
 *.mcap
+*.pcd
+*.obj
+*.mtl
+NeuroSymbolicNavigation/automotive/20250904_111219
