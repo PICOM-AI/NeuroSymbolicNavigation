@@ -19,4 +19,4 @@ $GPU_ARG \
 --name turtlebot4_sim \
 -p 5900:5900 \
 -v "$(pwd)/solver:/workspace/solver" \
-"$IMAGE" "/usr/local/bin/start_vnc_ros.sh"
+"$IMAGE" "/usr/local/bin/start_vnc_ros2.sh"
