@@ -9,10 +9,9 @@ cd ../..
 IMAGE="autoware_sim:vnc"
 
 
-ARCH=$(uname -m)
+# Check if GPU is available
 GPU_ARG=""
-
-if [ "$ARCH" = "x86_64" ]; then
+if command -v nvidia-smi &> /dev/null && nvidia-smi &> /dev/null; then
     GPU_ARG="--gpus all \
     -e __NV_PRIME_RENDER_OFFLOAD=1 \
     -e __GLX_VENDOR_LIBRARY_NAME=nvidia \

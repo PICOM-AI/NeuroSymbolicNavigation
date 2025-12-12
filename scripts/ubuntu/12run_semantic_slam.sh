@@ -5,8 +5,14 @@ cd ../..
 
 IMAGE="turtlebot4:semantic_slam"
 
+# Check if GPU is available
+GPU_ARG=""
+if command -v nvidia-smi &> /dev/null && nvidia-smi &> /dev/null; then
+    GPU_ARG="--gpus all"
+fi
+
 docker run --rm -it \
---gpus all \
+$GPU_ARG \
 --ipc host \
 --name turtlebot4_semantic_slam \
 "$IMAGE" \
