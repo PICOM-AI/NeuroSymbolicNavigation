@@ -1,2 +1,0 @@
-docker pull hiveintel/osm-3d-pcd-pipeline:latest
-

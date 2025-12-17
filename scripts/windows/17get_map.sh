@@ -1,0 +1,1 @@
+docker exec -it turtlebot4_slam bash -c "source /opt/ros/humble/setup.bash && cd /ws && python3 get_map.py"
