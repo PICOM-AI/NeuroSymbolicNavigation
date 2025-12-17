@@ -211,3 +211,4 @@ __marimo__/
 *.obj
 *.mtl
 NeuroSymbolicNavigation/automotive/20250904_111219
+*.osm

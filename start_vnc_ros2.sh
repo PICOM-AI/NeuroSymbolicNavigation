@@ -18,4 +18,4 @@ fi
 sleep 5
 # Launch your app
 exec ros2 launch turtlebot4_ignition_bringup turtlebot4_ignition.launch.py \
-world:=maze slam:=true nav:=true rviz:=true
+localization:=true world:=maze map:=maze/maze.yaml slam:=true nav:=true rviz:=true
