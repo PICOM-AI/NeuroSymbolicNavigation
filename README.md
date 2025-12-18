@@ -26,7 +26,7 @@ For quick setup and testing, use the provided bash scripts:
 ├── 5execute_solver_map2.sh           # Alternate example (similar to script 3)
 ├── 6execute_solver_map2_with_robot.sh# Alternate example (similar to script 4)
 ├── preview_asp_map.sh                # Preview ASP map
-└── preview_asp_map2.sh               # Preview ASP map for map2
+└── ...
 ```
 
 ---
@@ -85,40 +85,30 @@ Interaction is the same as on Linux:
 
 
 ### For Windows (WSL2)
-For windows, please setup Windows Subsystem for Linux here [How to install WSL](https://learn.microsoft.com/en-us/windows/wsl/setup/environment), then follow the instruction with VNC for **MacOs** above.
+For windows, please setup Windows Subsystem for Linux here [How to install WSL](https://learn.microsoft.com/en-us/windows/wsl/setup/environment).
 
----
-
-## 2. ASP Planning Setup
-
-### 2.1 Execute the Solver (Dry Run)
-
-Open a new terminal and navigate to the script directory.
-Run the solver without robot control to test ASP pathfinding on the map:
-
+Then open WSL terminal and run:
 ```bash
-bash 3execute_solver.sh
+cd scripts/ubuntu
+
+# Build the Docker image
+bash 1build_docker_x11.sh
+
+# Launch the simulator in a Docker container
+bash 2bringup_docker_x11.sh
 ```
 
-You will see a grid-based ASP map with a robot icon attempting to reach the target.
-Script `5execute_solver_map2.sh` runs the same process on an alternate map.
+A simulation window will appear. You can interact with it using your mouse:
+
+* **Pan:** Click and drag
+* **Tilt:** Hold the `Shift` key and drag
+* **Zoom:** Mouse Scroll
+
 
 ---
 
-### 2.2 Execute the Solver with Robot Control
 
-To run the ASP solver with active robot control:
-
-```bash
-bash 4execute_solver_with_robot.sh
-```
-
-This initializes the robot in the simulator. After initialization, the ASP solver window will appear, and the robot will move step-by-step toward the target as the solver computes each move.
-Script `6execute_solver_map2_with_robot.sh` provides a similar process for another map.
-
----
-
-## 3. Physical Robot (Optional)
+## 2. Physical Robot (Optional)
 
 To deploy on a real TurtleBot, follow the official setup guide:
 [TurtleBot 4 User Manual – Basic Setup](https://turtlebot.github.io/turtlebot4-user-manual/setup/basic.html)
