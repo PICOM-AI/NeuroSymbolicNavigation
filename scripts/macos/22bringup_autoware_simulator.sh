@@ -23,4 +23,5 @@ $GPU_ARG \
 --name autoware_sim \
 -p 5900:5900 \
 -v $PWD/hdmap/map_files:/data/hdmap \
+ -v $PWD/hdmap/nuplan_map:/data/nuplan_map \
 "$IMAGE"

@@ -8,6 +8,7 @@
  fi
  
  docker run -it -v $PWD/hdmap/map_files:/data/hdmap \
+ -v $PWD/hdmap/nuplan_map:/data/nuplan_map \
  $GPU_ARG \
     -e DISPLAY \
     -e QT_X11_NO_MITSHM=1 \
