@@ -1,0 +1,18 @@
+{
+  "ok": true,
+  "result": {
+    "lanes_polygons": [],
+    "intersections": [],
+    "generic_drivable_areas": [],
+    "walkways": [],
+    "carpark_areas": [],
+    "crosswalks": [],
+    "lane_group_connectors": [],
+    "lane_groups_polygons": [],
+    "road_segments": [],
+    "stop_polygons": [],
+    "lane_connectors": [],
+    "boundaries": [],
+    "traffic_lights": []
+  }
+}

@@ -1,0 +1,7 @@
+geopandas>=0.12.1
+pyogrio
+Shapely>=2.0.0
+numpy>=1.23.0,<2
+pandas
+rasterio
+nuplan-devkit

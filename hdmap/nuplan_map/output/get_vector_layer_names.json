@@ -1,0 +1,22 @@
+{
+  "ok": true,
+  "result": [
+    "baseline_paths",
+    "carpark_areas",
+    "generic_drivable_areas",
+    "dubins_nodes",
+    "lane_connectors",
+    "intersections",
+    "boundaries",
+    "crosswalks",
+    "lanes_polygons",
+    "lane_group_connectors",
+    "lane_groups_polygons",
+    "road_segments",
+    "stop_polygons",
+    "traffic_lights",
+    "walkways",
+    "gen_lane_connectors_scaled_width_polygons",
+    "meta"
+  ]
+}
