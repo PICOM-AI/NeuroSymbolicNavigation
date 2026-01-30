@@ -53,7 +53,7 @@ def run_and_log(json_path: str, func: Callable, *args: Any, **kwargs: Any) -> Tu
 
 
 def main() -> None:
-    map_root = sys.argv[1] if len(sys.argv) > 1 else os.environ.get("NUPLAN_MAPS_ROOT", "/root/maps")
+    map_root = sys.argv[1] if len(sys.argv) > 1 else os.environ.get("NUPLAN_MAPS_ROOT", "maps")
     map_version = sys.argv[2] if len(sys.argv) > 2 else os.environ.get("NUPLAN_MAP_VERSION", "nuplan-maps-v1.0")
     map_name = sys.argv[3] if len(sys.argv) > 3 else "sg-one-north"
     os.makedirs(OUTPUT_DIR, exist_ok=True)

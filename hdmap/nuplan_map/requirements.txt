@@ -5,3 +5,5 @@ numpy>=1.23.0,<2
 pandas
 rasterio
 nuplan-devkit
+aioboto3
+retry

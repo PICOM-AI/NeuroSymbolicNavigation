@@ -6,6 +6,9 @@ functions corresponding to the map structure in structure_nuplan_design.json.
 
 Requires: pip install nuplan-devkit
 Map root: directory containing {map_version}.json and location/version/map.gpkg files.
+
+Env: NUPLAN_MAP_LOCATIONS (default "sg-one-north") restricts which maps are loaded,
+so you can delete other map folders and keep only one location.
 """
 
 from __future__ import annotations
@@ -24,10 +27,27 @@ except ImportError:
     gpd = None  # type: ignore
 
 # Default map root and version (override with env NUPLAN_MAPS_ROOT, NUPLAN_MAP_VERSION)
-DEFAULT_MAP_ROOT = os.environ.get("NUPLAN_MAPS_ROOT", "/root/maps")
+DEFAULT_MAP_ROOT = os.environ.get("NUPLAN_MAPS_ROOT", "maps")
 DEFAULT_MAP_VERSION = os.environ.get("NUPLAN_MAP_VERSION", "nuplan-maps-v1.0")
-# Known locations in NuPlan maps
+# Location(s) to use. Set NUPLAN_MAP_LOCATIONS to e.g. "sg-one-north" or "sg-one-north,us-ma-boston"
+_DEFAULT_MAP_LOCATION = os.environ.get("NUPLAN_MAP_LOCATIONS", "sg-one-north")
+# Known locations in NuPlan maps (for reference)
 MAP_LOCATIONS = ("sg-one-north", "us-ma-boston", "us-nv-las-vegas-strip", "us-pa-pittsburgh-hazelwood")
+
+# Dimensions for sg-one-north (nuplan devkit hardcodes these; we patch so only this location is loaded)
+_SG_ONE_NORTH_DIMENSIONS = (21070, 28060)
+
+
+def _patch_gpkg_mapsdb_locations() -> None:
+    """Restrict nuplan GPKGMapsDB to only load our chosen location(s). Avoids missing file errors when other maps are deleted."""
+    import nuplan.database.maps_db.gpkg_mapsdb as _gpkg
+    locations = {s.strip() for s in _DEFAULT_MAP_LOCATION.split(",") if s.strip()}
+    _gpkg.MAP_LOCATIONS = locations
+    _gpkg.MAP_DIMENSIONS = {"sg-one-north": _SG_ONE_NORTH_DIMENSIONS}
+    if locations - set(_gpkg.MAP_DIMENSIONS.keys()):
+        for loc in locations:
+            if loc not in _gpkg.MAP_DIMENSIONS:
+                _gpkg.MAP_DIMENSIONS[loc] = (0, 0)
 
 
 def get_maps_db(map_root: str = DEFAULT_MAP_ROOT, map_version: str = DEFAULT_MAP_VERSION):
@@ -35,6 +55,7 @@ def get_maps_db(map_root: str = DEFAULT_MAP_ROOT, map_version: str = DEFAULT_MAP
     Get the GPKG MapsDB instance.
     Dependencies: nuplan.database.maps_db.gpkg_mapsdb.GPKGMapsDB, get_maps_db from map_factory.
     """
+    _patch_gpkg_mapsdb_locations()
     from nuplan.common.maps.nuplan_map.map_factory import get_maps_db as _get_maps_db
     return _get_maps_db(map_root, map_version)
 
@@ -62,9 +83,11 @@ def get_map(
 
 
 def get_locations(map_root: str = DEFAULT_MAP_ROOT, map_version: str = DEFAULT_MAP_VERSION) -> List[str]:
-    """Get list of available map location names."""
+    """Get list of available map location names (only those allowed by NUPLAN_MAP_LOCATIONS)."""
     maps_db = get_maps_db(map_root, map_version)
-    return list(maps_db.get_locations())
+    allowed = {s.strip() for s in _DEFAULT_MAP_LOCATION.split(",") if s.strip()}
+    all_locs = list(maps_db.get_locations())
+    return [loc for loc in all_locs if loc in allowed] if allowed else all_locs
 
 
 def get_vector_layer_names(map_api) -> List[str]:
